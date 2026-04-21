@@ -686,35 +686,48 @@ function drawDeadMark(
 }
 
 function drawFruits(ctx: CanvasRenderingContext2D, fruits: any[]) {
+  const fruitEmojis: Record<string, string> = {
+    cherry: "🍒",
+    strawberry: "🍓",
+    apple: "🍏",
+    melon: "🍈",
+  };
   const fruitColors: Record<string, string> = {
-    cherry: "#FF0000",
-    strawberry: "#FF69B4",
-    apple: "#32CD32",
-    melon: "#00FFFF",
+    cherry: "rgba(255, 0, 0, 0.8)",
+    strawberry: "rgba(255, 105, 180, 0.8)",
+    apple: "rgba(50, 205, 50, 0.8)",
+    melon: "rgba(0, 255, 255, 0.8)",
   };
 
   for (const f of fruits) {
     const cx = f.pos.x * CELL + CELL / 2;
     const cy = f.pos.y * CELL + CELL / 2;
-    const color = fruitColors[f.type] || "#FFFFFF";
+    const emoji = fruitEmojis[f.type] || "🍎";
+    const glowColor = fruitColors[f.type] || "rgba(255, 255, 255, 0.8)";
 
     ctx.save();
     ctx.translate(cx, cy);
-    const pulse = 1 + Math.sin(f.expiresInTicks / 5) * 0.2;
+    // Suave pulsación
+    const pulse = 1 + Math.sin(f.expiresInTicks / 5) * 0.15;
     ctx.scale(pulse, pulse);
 
-    ctx.shadowColor = color;
+    // Resplandor neón detrás del emoji
+    ctx.shadowColor = glowColor;
     ctx.shadowBlur = 15;
-    ctx.fillStyle = color;
+    
+    // Fuente para asegurar que el emoji se vea bien
+    ctx.font = `${CELL * 0.85}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    // Dibujar el emoji (la sombra se aplica automáticamente)
+    ctx.fillText(emoji, 0, 1); // +1 y para centrarlo visualmente mejor
 
-    ctx.beginPath();
-    ctx.arc(0, 0, CELL * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-
+    // Añadir un pequeño destello blanco en el centro para dar más vida
     ctx.shadowBlur = 0;
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
     ctx.beginPath();
-    ctx.arc(0, -CELL * 0.1, CELL * 0.1, 0, Math.PI * 2);
+    ctx.arc(-CELL * 0.15, -CELL * 0.15, CELL * 0.1, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
