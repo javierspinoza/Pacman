@@ -12,6 +12,28 @@ export interface Vec2 {
   y: number;
 }
 
+export type FruitType = "cherry" | "strawberry" | "apple" | "melon";
+
+export interface ActivePower {
+  type: FruitType;
+  durationTicks: number;
+}
+
+export interface FruitEntity {
+  id: string;
+  type: FruitType;
+  pos: Vec2;
+  expiresInTicks: number;
+}
+
+export interface LaserBeam {
+  x: number;
+  y: number;
+  dir: Direction;
+  length: number;
+  expiresInTicks: number;
+}
+
 export type GhostName = "blinky" | "pinky" | "inky" | "clyde";
 export type GhostMode = "scatter" | "chase" | "frightened" | "eaten" | "leaving";
 export type PlayerRole = "pacman" | GhostName;
@@ -26,6 +48,7 @@ export interface PlayerState {
   alive: boolean;
   score: number;
   lives: number;
+  activePower?: ActivePower | null;
 }
 
 export interface GhostState {
@@ -36,6 +59,7 @@ export interface GhostState {
   wanted: Direction;
   mode: GhostMode;
   modeTimer: number;
+  activePower?: ActivePower | null;
 }
 
 export type GameStatus = "lobby" | "running" | "paused" | "finished";
@@ -52,6 +76,8 @@ export interface GameSnapshot {
   countdown: number;
   level: number;
   rematchVotes: string[];
+  fruits: FruitEntity[];
+  lasers: LaserBeam[];
 }
 
 export interface MazeLayout {
