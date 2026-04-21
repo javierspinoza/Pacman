@@ -323,7 +323,9 @@ function drawEntities(
     const prevGhost = prev?.ghosts.find((g) => g.name === ghost.name);
     const x = lerp(prevGhost?.pos.x ?? ghost.pos.x, ghost.pos.x, alpha);
     const y = lerp(prevGhost?.pos.y ?? ghost.pos.y, ghost.pos.y, alpha);
-    drawGhost(ctx, x, y, ghost.name, ghost.mode, ghost.dir, snap.tick);
+    const ghostPlayer = snap.players.find((p) => p.role === ghost.name);
+    const isDeadPlayer = ghostPlayer ? !ghostPlayer.alive : false;
+    drawGhost(ctx, x, y, ghost.name, ghost.mode, ghost.dir, snap.tick, isDeadPlayer);
   }
 
   for (const player of snap.players) {
@@ -446,7 +448,8 @@ function drawGhost(
   name: GhostName,
   mode: string,
   dir: PlayerState["dir"],
-  tick: number
+  tick: number,
+  isDeadPlayer: boolean = false
 ) {
   const cx = tileX * CELL + CELL / 2;
   const cy = tileY * CELL + CELL / 2;
@@ -463,6 +466,7 @@ function drawGhost(
       : frightFlash ?? GHOST_COLORS[name];
 
   ctx.save();
+  if (isDeadPlayer) ctx.globalAlpha = 0.3;
 
   // Vibrant neon glow
   if (mode !== "eaten") {

@@ -478,6 +478,9 @@ export class GameEngine {
     for (const player of this.players.values()) {
       if (player.role !== "pacman" || !player.alive) continue;
       for (const ghost of this.ghosts) {
+        const ghostPlayer = ghost.controlledBy ? this.players.get(ghost.controlledBy) : null;
+        if (ghostPlayer && !ghostPlayer.alive) continue;
+
         const d = Math.hypot(player.pos.x - ghost.pos.x, player.pos.y - ghost.pos.y);
         if (d < 0.6) {
           if (ghost.mode === "frightened") {
@@ -491,7 +494,6 @@ export class GameEngine {
                 ghostPlayer.lives--;
                 if (ghostPlayer.lives <= 0) {
                   ghostPlayer.alive = false;
-                  ghost.controlledBy = null;
                 }
               }
             }
