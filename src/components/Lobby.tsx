@@ -96,7 +96,7 @@ export default function Lobby() {
         {/* Wordmark */}
         <header className="text-center space-y-1.5">
           <div
-            className="font-display text-6xl tracking-[0.08em] leading-none"
+            className="font-display text-4xl leading-none"
             style={{
               color: "var(--gold)",
               textShadow: "0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2)",
@@ -105,7 +105,7 @@ export default function Lobby() {
             Pac·Man
           </div>
           <div
-            className="text-[11px] tracking-[0.4em] uppercase"
+            className="text-[9px] uppercase mt-2"
             style={{ color: "var(--ink-dim)" }}
           >
             Neon Labyrinth
@@ -125,7 +125,7 @@ export default function Lobby() {
         {/* Name */}
         <Field label="Tu nombre">
           <input
-            className="w-full bg-transparent px-2 py-3 outline-none font-display text-xl transition-all duration-300"
+            className="w-full bg-transparent px-2 py-3 outline-none font-display text-sm transition-all duration-300"
             style={{
               color: "var(--ink)",
               borderBottom: "2px solid rgba(255, 215, 0, 0.2)",
@@ -175,9 +175,7 @@ export default function Lobby() {
             style={{
               background: "linear-gradient(135deg, #FFD700 0%, #FFA500 100%)",
               color: "#030014",
-              letterSpacing: "0.25em",
-              fontSize: "13px",
-              fontWeight: 800,
+              fontSize: "10px",
               textTransform: "uppercase",
               boxShadow:
                 "0 10px 25px -5px rgba(255, 215, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.4)",
@@ -189,7 +187,7 @@ export default function Lobby() {
           <div className="flex items-center gap-3">
             <span className="flex-1 hairline" style={{ height: 1 }} />
             <span
-              className="text-[10px] tracking-[0.3em] uppercase font-bold"
+              className="text-[8px] uppercase"
               style={{ color: "var(--ink-dim)" }}
             >
               o unirse
@@ -199,7 +197,7 @@ export default function Lobby() {
 
           <div className="flex gap-3">
             <input
-              className="flex-1 bg-transparent px-4 py-3 outline-none font-mono uppercase tracking-[0.4em] text-center text-xl transition-all"
+              className="flex-1 bg-transparent px-4 py-3 outline-none font-mono uppercase text-center text-sm transition-all"
               style={{
                 color: "var(--gold)",
                 background: "rgba(255,255,255,0.02)",
@@ -227,10 +225,8 @@ export default function Lobby() {
                 background: "rgba(255,255,255,0.05)",
                 color: "var(--ink)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
-                fontSize: "12px",
-                letterSpacing: "0.25em",
+                fontSize: "10px",
                 textTransform: "uppercase",
-                fontWeight: 600,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(255,255,255,0.1)";
@@ -250,7 +246,7 @@ export default function Lobby() {
 
         {error && (
           <p
-            className="text-xs text-center font-display"
+            className="text-[10px] text-center font-display mt-2"
             style={{ color: "var(--neon-blinky)", textShadow: "0 0 10px rgba(255,0,60,0.5)" }}
           >
             {error}
@@ -344,7 +340,7 @@ function ModeCard({
       }}
     >
       <div
-        className="font-display text-xl mb-1"
+        className="font-display text-[10px] mb-2"
         style={{
           color: active ? "var(--gold)" : "var(--ink)",
           textShadow: active ? "0 0 15px rgba(255,215,0,0.3)" : "none",
@@ -353,7 +349,7 @@ function ModeCard({
         {title}
       </div>
       <div
-        className="text-[10px] tracking-[0.2em] uppercase"
+        className="text-[8px] uppercase"
         style={{ color: active ? "var(--ink)" : "var(--ink-dim)" }}
       >
         {subtitle}

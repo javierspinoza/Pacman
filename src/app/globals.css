@@ -9,9 +9,9 @@
   --gold-soft: #ffea70;
   --accent: #FF00FF;
   --rule: rgba(255, 215, 0, 0.2);
-  --font-display: var(--font-display-next), "Outfit", "Cormorant Garamond", "Playfair Display", Georgia, serif;
-  --font-mono: var(--font-mono-next), ui-monospace, "SF Mono", Menlo, monospace;
-  --font-sans: var(--font-sans-next), "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display-next), "Press Start 2P", monospace;
+  --font-mono: var(--font-display-next), "Press Start 2P", monospace;
+  --font-sans: var(--font-display-next), "Press Start 2P", monospace;
   
   /* Neon Palette */
   --neon-blinky: #FF003C;
@@ -37,8 +37,8 @@ body {
 /* Elegant display type for titles */
 .font-display {
   font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .font-mono {
@@ -144,9 +144,9 @@ body {
 /* Eyebrow label */
 .eyebrow {
   font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.25em;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-dim);
 }

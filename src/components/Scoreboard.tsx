@@ -53,10 +53,10 @@ export default function Scoreboard() {
       
       {/* Top Header */}
       <header className="text-center">
-        <div className="font-display text-2xl tracking-[0.1em] font-bold" style={{ color: "var(--gold)", textShadow: "0 0 10px rgba(255, 215, 0, 0.4)" }}>
+        <div className="font-display text-xl tracking-[0.05em] font-bold" style={{ color: "var(--gold)", textShadow: "0 0 10px rgba(255, 215, 0, 0.4)" }}>
           PAC-MAN
         </div>
-        <div className="flex items-center justify-center gap-2 text-[8px] tracking-[0.4em] uppercase mt-1 font-bold" style={{ color: "rgba(0, 255, 255, 0.8)" }}>
+        <div className="flex items-center justify-center gap-2 text-[8px] tracking-[0.1em] uppercase mt-2 font-bold" style={{ color: "rgba(0, 255, 255, 0.8)" }}>
           <span>••</span>
           <span className="text-white opacity-80">NEON ARCADE</span>
           <span>••</span>
@@ -81,10 +81,10 @@ export default function Scoreboard() {
         </div>
         
         <div className="flex items-end justify-between">
-          <div className="font-display text-5xl tracking-[0.08em] leading-none" style={{ color: "var(--gold)", textShadow: "0 0 15px rgba(255, 215, 0, 0.4)" }}>
+          <div className="font-display text-3xl leading-none" style={{ color: "var(--gold)", textShadow: "0 0 15px rgba(255, 215, 0, 0.4)" }}>
             {lobby.roomId}
           </div>
-          <div className="flex items-center gap-1.5 text-[14px] font-mono font-bold" style={{ color: "var(--gold)" }}>
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold" style={{ color: "var(--gold)" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9C5 11.38 6.19 13.47 8 14.74V17C8 17.55 8.45 18 9 18H15C15.55 18 16 17.55 16 17V14.74C17.81 13.47 19 11.38 19 9C19 5.13 15.87 2 12 2ZM14 20C14 20.55 13.55 21 13 21H11C10.45 21 10 20.55 10 20V19H14V20Z"/></svg>
             +{collected}
           </div>
@@ -95,7 +95,7 @@ export default function Scoreboard() {
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <span className="eyebrow">PUNTAJE</span>
-          <span className="font-mono text-[11px] font-bold" style={{ color: "var(--ink-dim)" }}>
+          <span className="font-mono text-[8px] font-bold" style={{ color: "var(--ink-dim)" }}>
             {collected} / {totalPellets}
           </span>
         </div>
@@ -129,7 +129,7 @@ export default function Scoreboard() {
       <section className="space-y-4 flex-1 min-h-0 flex flex-col">
         <div className="flex items-baseline justify-between shrink-0">
           <span className="eyebrow">JUGADORES</span>
-          <span className="font-mono text-[12px] font-bold" style={{ color: "var(--ink)" }}>
+          <span className="font-mono text-[10px] font-bold" style={{ color: "var(--ink)" }}>
             {lobby.players.length}
           </span>
         </div>
@@ -150,23 +150,23 @@ export default function Scoreboard() {
                 }}
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <span className="font-mono text-[10px] w-5 font-bold" style={{ color: "var(--ink-dim)" }}>
+                  <span className="font-mono text-[8px] w-6 font-bold" style={{ color: "var(--ink-dim)" }}>
                     #{String(i + 1).padStart(2, "0")}
                   </span>
                   
                   <PacmanIcon color={roleColor} />
                   
                   <div className="min-w-0 flex flex-col">
-                    <span className="truncate text-sm font-bold flex items-center gap-2" style={{ color: "var(--gold)" }}>
+                    <span className="truncate text-[10px] font-bold flex items-center gap-2" style={{ color: "var(--gold)" }}>
                       {p.name}
-                      {isMe && <span className="text-[14px]">•••</span>}
+                      {isMe && <span className="text-[10px]">•••</span>}
                     </span>
-                    <span className="text-[9px] tracking-widest uppercase font-bold" style={{ color: "var(--ink-dim)" }}>
+                    <span className="text-[8px] uppercase mt-1" style={{ color: "var(--ink-dim)" }}>
                       {ROLE_LABEL[p.role] ?? p.role}
                     </span>
                   </div>
                 </div>
-                <span className="font-mono text-sm tabular-nums font-bold" style={{ color: "var(--neon-inky)" }}>
+                <span className="font-mono text-[10px] tabular-nums font-bold" style={{ color: "var(--neon-inky)" }}>
                   {playerScore.toLocaleString()}
                 </span>
               </li>
@@ -186,8 +186,7 @@ export default function Scoreboard() {
               background: "rgba(0, 255, 255, 0.1)",
               border: "1px solid rgba(0, 255, 255, 0.6)",
               color: "white",
-              letterSpacing: "0.15em",
-              fontSize: "13px",
+              fontSize: "10px",
               fontWeight: 800,
               textTransform: "uppercase",
               boxShadow: "0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2)",
