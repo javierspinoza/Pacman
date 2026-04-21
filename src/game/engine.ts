@@ -697,7 +697,8 @@ export class GameEngine {
     for (let y = 0; y < this.maze.height; y++) {
       for (let x = 0; x < this.maze.width; x++) {
         const tile = this.maze.tiles[y * this.maze.width + x];
-        if (tile !== TILE_WALL && tile !== TILE_GATE) {
+        // Solo generar frutas en casillas donde normalmente habría puntos
+        if (tile === TILE_PELLET || tile === TILE_POWER) {
           validTiles.push({ x, y });
         }
       }

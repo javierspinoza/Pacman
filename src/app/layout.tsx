@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter, JetBrains_Mono } from "next/font/google";
+import { Press_Start_2P, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const display = Cormorant_Garamond({
+const display = Press_Start_2P({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400"],
   variable: "--font-display-next",
   display: "swap",
 });
