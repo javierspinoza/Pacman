@@ -242,6 +242,36 @@ export class GameEngine {
 
     this.advanceSchedule();
 
+    if (this.fruitSpawnTimer > 0) this.fruitSpawnTimer--;
+    else this.spawnFruit();
+
+    for (let i = this.fruits.length - 1; i >= 0; i--) {
+      this.fruits[i].expiresInTicks--;
+      if (this.fruits[i].expiresInTicks <= 0) {
+        this.fruits.splice(i, 1);
+      }
+    }
+
+    for (let i = this.lasers.length - 1; i >= 0; i--) {
+      this.lasers[i].expiresInTicks--;
+      if (this.lasers[i].expiresInTicks <= 0) {
+        this.lasers.splice(i, 1);
+      }
+    }
+
+    for (const player of this.players.values()) {
+      if (player.activePower) {
+        player.activePower.durationTicks--;
+        if (player.activePower.durationTicks <= 0) player.activePower = null;
+      }
+    }
+    for (const ghost of this.ghosts) {
+      if (ghost.activePower) {
+        ghost.activePower.durationTicks--;
+        if (ghost.activePower.durationTicks <= 0) ghost.activePower = null;
+      }
+    }
+
     for (const player of this.players.values()) {
       if (player.role === "pacman" && player.alive) this.movePacman(player);
     }
@@ -280,9 +310,11 @@ export class GameEngine {
   }
 
   private movePacman(player: PlayerState) {
-    const speed = this.getPacmanSpeed();
+    const speed = this.getPacmanSpeed(player);
     tryTurn(player, this.maze, false);
     stepEntity(player, this.maze, speed, false);
+
+    this.eatFruit(player);
 
     // Consume pellets when roughly centered on a tile
     const cx = Math.round(player.pos.x);
@@ -328,7 +360,7 @@ export class GameEngine {
         ? FRIGHTENED_SPEED
         : ghost.mode === "eaten" || ghost.mode === "leaving"
         ? EATEN_SPEED
-        : this.getGhostSpeed();
+        : this.getGhostSpeed(ghost);
 
     const canUseGate = ghost.mode === "eaten" || ghost.mode === "leaving";
 
@@ -360,6 +392,8 @@ export class GameEngine {
         ghost.mode = this.frightenedRemaining > 0 ? "frightened" : this.currentBaseMode();
       }
     }
+
+    this.eatFruit(ghost);
 
     // Eaten → respawn at starting slot, then start leaving again.
     if (ghost.mode === "eaten") {
@@ -498,10 +532,34 @@ export class GameEngine {
     return null;
   }
 
+  private killPacman(player: PlayerState, killerId: string | null) {
+    if (!player.alive) return;
+    player.lives--;
+    if (this.config.mode === "versus" && killerId) {
+      const ghostPlayer = this.players.get(killerId);
+      if (ghostPlayer) ghostPlayer.score += 300;
+      for (const p of this.players.values()) {
+        if (p.role !== "pacman" && p.id !== killerId) p.score += 50;
+      }
+    }
+
+    if (player.lives <= 0) {
+      player.alive = false;
+    } else {
+      player.pos = this.findPacmanSpawn();
+      player.dir = "none";
+      player.wanted = "none";
+    }
+  }
+
   private handleCollisions() {
     for (const player of this.players.values()) {
       if (player.role !== "pacman" || !player.alive) continue;
       for (const ghost of this.ghosts) {
+        const isGhostInvisible = ghost.activePower?.type === "strawberry";
+        const isPacmanInvisible = player.activePower?.type === "strawberry";
+        if (isGhostInvisible || isPacmanInvisible) continue;
+
         const ghostPlayer = ghost.controlledBy ? this.players.get(ghost.controlledBy) : null;
         if (ghostPlayer && !ghostPlayer.alive) continue;
 
@@ -522,27 +580,7 @@ export class GameEngine {
               }
             }
           } else if (ghost.mode !== "eaten" && ghost.mode !== "leaving") {
-            player.lives--;
-            
-            // Award points in versus mode
-            if (this.config.mode === "versus" && ghost.controlledBy) {
-              const ghostPlayer = this.players.get(ghost.controlledBy);
-              if (ghostPlayer) ghostPlayer.score += 300;
-              // Assist points for other ghost players
-              for (const p of this.players.values()) {
-                if (p.role !== "pacman" && p.id !== ghost.controlledBy) {
-                  p.score += 50;
-                }
-              }
-            }
-
-            if (player.lives <= 0) {
-              player.alive = false;
-            } else {
-              player.pos = this.findPacmanSpawn();
-              player.dir = "none";
-              player.wanted = "none";
-            }
+            this.killPacman(player, ghost.controlledBy);
             return;
           }
         }
@@ -607,6 +645,9 @@ export class GameEngine {
     this.scheduleRemaining = MODE_SCHEDULE[0].ticks;
     this.frightenedRemaining = 0;
     this.countdown = 0;
+    this.fruits = [];
+    this.lasers = [];
+    this.fruitSpawnTimer = 15 * 30;
     
     for (let i = 0; i < this.maze.tiles.length; i++) {
       if (this.maze.tiles[i] === TILE_PELLET || this.maze.tiles[i] === TILE_POWER) {
@@ -619,6 +660,7 @@ export class GameEngine {
       p.alive = true;
       p.score = 0;
       p.lives = 2;
+      p.activePower = null;
       if (p.role === "pacman") {
         p.pos = this.findPacmanSpawn();
       } else {
@@ -643,7 +685,105 @@ export class GameEngine {
       countdown: this.countdown,
       level: this.level,
       rematchVotes,
+      fruits: this.fruits,
+      lasers: this.lasers,
     };
+  }
+
+  private spawnFruit() {
+    const validTiles: Vec2[] = [];
+    for (let y = 0; y < this.maze.height; y++) {
+      for (let x = 0; x < this.maze.width; x++) {
+        const tile = this.maze.tiles[y * this.maze.width + x];
+        if (tile !== TILE_WALL && tile !== TILE_GATE) {
+          validTiles.push({ x, y });
+        }
+      }
+    }
+    if (validTiles.length === 0) return;
+    const pos = validTiles[Math.floor(Math.random() * validTiles.length)];
+    const types: FruitType[] = ["cherry", "strawberry", "apple", "melon"];
+    const type = types[Math.floor(Math.random() * types.length)];
+    this.fruits.push({
+      id: Math.random().toString(36).slice(2),
+      type,
+      pos,
+      expiresInTicks: 5 * 30
+    });
+    this.fruitSpawnTimer = 15 * 30;
+  }
+
+  private eatFruit(entity: PlayerState | GhostState) {
+    const cx = Math.round(entity.pos.x);
+    const cy = Math.round(entity.pos.y);
+
+    for (let i = this.fruits.length - 1; i >= 0; i--) {
+      const f = this.fruits[i];
+      if (Math.abs(f.pos.x - cx) < 0.5 && Math.abs(f.pos.y - cy) < 0.5) {
+        const fruitType = f.type;
+        this.fruits.splice(i, 1);
+
+        if (fruitType === "apple") {
+           this.fireLaser(entity);
+        } else {
+           entity.activePower = {
+             type: fruitType,
+             durationTicks: fruitType === "melon" ? 3 * 30 : 5 * 30
+           };
+        }
+      }
+    }
+  }
+
+  private fireLaser(entity: PlayerState | GhostState) {
+    const isPacman = 'role' in entity ? entity.role === "pacman" : false;
+    const dir = entity.dir === "none" ? "up" : entity.dir;
+    let length = 0;
+    const cx = Math.round(entity.pos.x);
+    const cy = Math.round(entity.pos.y);
+    let currX = cx;
+    let currY = cy;
+
+    while (true) {
+      currX += dx(dir);
+      currY += dy(dir);
+      const wx = ((currX % this.maze.width) + this.maze.width) % this.maze.width;
+      if (currY < 0 || currY >= this.maze.height || this.maze.tiles[currY * this.maze.width + wx] === TILE_WALL) {
+        break;
+      }
+      length++;
+      
+      if (isPacman) {
+        for (const g of this.ghosts) {
+           if (Math.round(g.pos.x) === wx && Math.round(g.pos.y) === currY) {
+             if (g.mode !== "eaten" && g.mode !== "leaving") {
+               g.mode = "eaten";
+               const ghostPlayer = g.controlledBy ? this.players.get(g.controlledBy) : null;
+               if (ghostPlayer && ghostPlayer.alive) {
+                 ghostPlayer.lives--;
+                 if (ghostPlayer.lives <= 0) ghostPlayer.alive = false;
+               }
+               if ('score' in entity) {
+                  entity.score += 200;
+                  this.score += 200;
+               }
+             }
+           }
+        }
+      } else {
+        for (const p of this.players.values()) {
+           if (p.role === "pacman" && p.alive) {
+             if (Math.round(p.pos.x) === wx && Math.round(p.pos.y) === currY) {
+               this.killPacman(p, 'controlledBy' in entity ? entity.controlledBy : null);
+             }
+           }
+        }
+      }
+    }
+    
+    this.lasers.push({
+      x: cx, y: cy, dir, length, expiresInTicks: 15
+    });
   }
 }
 
