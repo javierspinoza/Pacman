@@ -684,3 +684,75 @@ function drawDeadMark(
   ctx.lineTo(cx - 6, cy + 6);
   ctx.stroke();
 }
+
+function drawFruits(ctx: CanvasRenderingContext2D, fruits: any[]) {
+  const fruitColors: Record<string, string> = {
+    cherry: "#FF0000",
+    strawberry: "#FF69B4",
+    apple: "#32CD32",
+    melon: "#00FFFF",
+  };
+
+  for (const f of fruits) {
+    const cx = f.pos.x * CELL + CELL / 2;
+    const cy = f.pos.y * CELL + CELL / 2;
+    const color = fruitColors[f.type] || "#FFFFFF";
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    const pulse = 1 + Math.sin(f.expiresInTicks / 5) * 0.2;
+    ctx.scale(pulse, pulse);
+
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = color;
+
+    ctx.beginPath();
+    ctx.arc(0, 0, CELL * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(0, -CELL * 0.1, CELL * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+function drawLasers(ctx: CanvasRenderingContext2D, lasers: any[]) {
+  for (const l of lasers) {
+    const cx = l.x * CELL + CELL / 2;
+    const cy = l.y * CELL + CELL / 2;
+    
+    let endX = cx;
+    let endY = cy;
+    
+    if (l.dir === "up") endY -= l.length * CELL;
+    else if (l.dir === "down") endY += l.length * CELL;
+    else if (l.dir === "left") endX -= l.length * CELL;
+    else if (l.dir === "right") endX += l.length * CELL;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, l.expiresInTicks / 15);
+    
+    ctx.shadowColor = "#32CD32";
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = "#32CD32";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+}
