@@ -60,6 +60,12 @@ export default function GameCanvas() {
       if (snapshot) drawPellets(ctx, lobby.maze, snapshot);
 
       if (snapshot) {
+        if (snapshot.fruits && snapshot.fruits.length > 0) {
+          drawFruits(ctx, snapshot.fruits);
+        }
+        if (snapshot.lasers && snapshot.lasers.length > 0) {
+          drawLasers(ctx, snapshot.lasers);
+        }
         const alpha = computeInterpAlpha(snapshotReceivedAt);
         drawEntities(ctx, snapshot, prevSnapshot, alpha, playerId);
       }
@@ -325,7 +331,7 @@ function drawEntities(
     const y = lerp(prevGhost?.pos.y ?? ghost.pos.y, ghost.pos.y, alpha);
     const ghostPlayer = snap.players.find((p) => p.role === ghost.name);
     const isDeadPlayer = ghostPlayer ? !ghostPlayer.alive : false;
-    drawGhost(ctx, x, y, ghost.name, ghost.mode, ghost.dir, snap.tick, isDeadPlayer);
+    drawGhost(ctx, x, y, ghost.name, ghost.mode, ghost.dir, snap.tick, isDeadPlayer, ghost.activePower);
   }
 
   for (const player of snap.players) {
@@ -336,7 +342,7 @@ function drawEntities(
       const prevP = prev?.players.find((p) => p.id === player.id);
       x = lerp(prevP?.pos.x ?? player.pos.x, player.pos.x, alpha);
       y = lerp(prevP?.pos.y ?? player.pos.y, player.pos.y, alpha);
-      drawPacman(ctx, x, y, player.dir, snap.tick, player.id === selfId);
+      drawPacman(ctx, x, y, player.dir, snap.tick, player.id === selfId, player.activePower);
     } else {
       const ghost = snap.ghosts.find(g => g.name === player.role);
       if (!ghost) continue;
@@ -396,7 +402,8 @@ function drawPacman(
   tileY: number,
   dir: PlayerState["dir"],
   tick: number,
-  isSelf: boolean
+  isSelf: boolean,
+  activePower: any
 ) {
   const cx = tileX * CELL + CELL / 2;
   const cy = tileY * CELL + CELL / 2;
@@ -413,10 +420,24 @@ function drawPacman(
   ctx.translate(cx, cy);
   ctx.rotate(rot);
 
-  if (isSelf) {
-    // Intense neon yellow ring for self
-    ctx.strokeStyle = "rgba(255, 230, 0, 0.9)";
-    ctx.shadowColor = "rgba(255, 230, 0, 0.8)";
+  if (activePower?.type === "strawberry") {
+    ctx.globalAlpha = 0.4;
+  }
+
+  if (activePower?.type === "melon") {
+    ctx.strokeStyle = "rgba(0, 255, 255, 0.9)";
+    ctx.shadowColor = "rgba(0, 255, 255, 0.8)";
+    ctx.shadowBlur = 15;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 6, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (isSelf || activePower?.type === "cherry") {
+    // Intense neon yellow ring for self or speed boost
+    ctx.strokeStyle = activePower?.type === "cherry" ? "rgba(255, 0, 0, 0.9)" : "rgba(255, 230, 0, 0.9)";
+    ctx.shadowColor = activePower?.type === "cherry" ? "rgba(255, 0, 0, 0.8)" : "rgba(255, 230, 0, 0.8)";
     ctx.shadowBlur = 10;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -449,7 +470,8 @@ function drawGhost(
   mode: string,
   dir: PlayerState["dir"],
   tick: number,
-  isDeadPlayer: boolean = false
+  isDeadPlayer: boolean = false,
+  activePower: any
 ) {
   const cx = tileX * CELL + CELL / 2;
   const cy = tileY * CELL + CELL / 2;
@@ -466,7 +488,27 @@ function drawGhost(
       : frightFlash ?? GHOST_COLORS[name];
 
   ctx.save();
-  if (isDeadPlayer) ctx.globalAlpha = 0.3;
+  if (isDeadPlayer || activePower?.type === "strawberry") {
+    ctx.globalAlpha = 0.3;
+  }
+
+  if (activePower?.type === "melon") {
+    ctx.shadowColor = "rgba(0, 255, 255, 0.9)";
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = "rgba(0, 255, 255, 1)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (activePower?.type === "cherry") {
+    ctx.shadowColor = "rgba(255, 0, 0, 0.9)";
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = "rgba(255, 0, 0, 1)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   // Vibrant neon glow
   if (mode !== "eaten") {
