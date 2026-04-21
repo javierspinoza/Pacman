@@ -100,6 +100,29 @@ async function main() {
       leaveAllRooms(socket);
     });
 
+    socket.on("rematch", () => {
+      const roomId = findRoomIdFor(socket);
+      const room = roomId ? rooms.get(roomId) : undefined;
+      if (room) {
+        room.voteRematch(socket);
+      }
+    });
+
+    socket.on("restart_game", (raw, ack) => {
+      const roomId = findRoomIdFor(socket);
+      const room = roomId ? rooms.get(roomId) : undefined;
+      if (!room) {
+        ack?.({ ok: false, error: "Not in a room" });
+        return;
+      }
+      const ok = room.restartGame(socket);
+      if (!ok) {
+        ack?.({ ok: false, error: "Only the creator can restart" });
+      } else {
+        ack?.({ ok: true });
+      }
+    });
+
     socket.on("disconnect", () => {
       leaveAllRooms(socket);
     });

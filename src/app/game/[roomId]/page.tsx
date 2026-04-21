@@ -38,12 +38,17 @@ export default function GamePage({
     const onTick = (snap: GameSnapshot) => setSnapshot(snap);
     const onConnect = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
+    const onKicked = () => {
+      alert("La revancha ha comenzado sin ti.");
+      router.push("/");
+    };
 
     s.on("assigned", onAssigned);
     s.on("lobby", onLobby);
     s.on("tick", onTick);
     s.on("connect", onConnect);
     s.on("disconnect", onDisconnect);
+    s.on("kicked", onKicked);
     if (s.connected) setConnected(true);
 
     if (!playerId && playerName) {
@@ -65,6 +70,7 @@ export default function GamePage({
       s.off("tick", onTick);
       s.off("connect", onConnect);
       s.off("disconnect", onDisconnect);
+      s.off("kicked", onKicked);
     };
   }, [playerId, playerName, roomId, router, setAssigned, setLobby, setSnapshot]);
 
@@ -273,11 +279,15 @@ function KbdHint({ keys }: { keys: string[] }) {
 }
 
 function GameOver() {
-  const { snapshot, lobby } = useGameStore();
+  const { snapshot, lobby, playerId } = useGameStore();
   if (!snapshot || !lobby) return null;
   const winner = snapshot.winnerId
     ? lobby.players.find((p) => p.id === snapshot.winnerId)?.name
     : null;
+
+  const isCreator = lobby.players[0]?.id === playerId;
+  const hasVoted = snapshot.rematchVotes?.includes(playerId ?? "") || false;
+
   return (
     <div
       className="fixed inset-0 z-20 flex items-center justify-center p-6"
@@ -314,48 +324,79 @@ function GameOver() {
           </p>
         )}
         <div className="text-left space-y-3">
-          <h3 className="eyebrow">Puntuaciones finales</h3>
+          <h3 className="eyebrow flex justify-between items-center">
+            <span>Puntuaciones finales</span>
+            {snapshot.rematchVotes && snapshot.rematchVotes.length > 0 && (
+              <span className="text-[9px] text-[var(--gold)]">Revancha: {snapshot.rematchVotes.length}</span>
+            )}
+          </h3>
           <ul className="space-y-1">
             {[...snapshot.players]
               .sort((a, b) => b.score - a.score)
-              .map((p, i) => (
-                <li
-                  key={p.id}
-                  className="flex justify-between items-baseline py-1.5"
-                  style={{
-                    borderBottom: "1px solid rgba(212,175,106,0.08)",
-                  }}
-                >
-                  <span className="flex items-center gap-3">
-                    <span
-                      className="font-mono text-[10px]"
-                      style={{ color: "var(--ink-dim)" }}
-                    >
-                      {String(i + 1).padStart(2, "0")}
+              .map((p, i) => {
+                const voted = snapshot.rematchVotes?.includes(p.id) || (isCreator && lobby.players[0]?.id === p.id);
+                return (
+                  <li
+                    key={p.id}
+                    className="flex justify-between items-baseline py-1.5"
+                    style={{
+                      borderBottom: "1px solid rgba(212,175,106,0.08)",
+                    }}
+                  >
+                    <span className="flex items-center gap-3">
+                      <span
+                        className="font-mono text-[10px]"
+                        style={{ color: "var(--ink-dim)" }}
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span>
+                        {p.name}
+                        {voted && <span className="ml-2 text-[var(--gold)] text-xs">✓</span>}
+                      </span>
                     </span>
-                    <span>{p.name}</span>
-                  </span>
-                  <span className="font-mono tabular-nums">
-                    {p.score.toLocaleString()}
-                  </span>
-                </li>
-              ))}
+                    <span className="font-mono tabular-nums">
+                      {p.score.toLocaleString()}
+                    </span>
+                  </li>
+                );
+              })}
           </ul>
         </div>
-        <a
-          href="/"
-          className="inline-block px-10 py-3 rounded-sm mt-2"
-          style={{
-            background: "linear-gradient(180deg, #e8c989, #c9a466)",
-            color: "#1a1420",
-            letterSpacing: "0.25em",
-            fontSize: "11px",
-            fontWeight: 600,
-            textTransform: "uppercase",
-          }}
-        >
-          Volver al lobby
-        </a>
+        <div className="flex flex-col gap-3 mt-6">
+          {isCreator ? (
+            <button
+              onClick={() => getSocket().emit("restart_game", {})}
+              className="inline-block px-10 py-3 rounded-sm font-bold text-[11px] uppercase tracking-widest transition-opacity hover:opacity-90"
+              style={{
+                background: "linear-gradient(180deg, #e8c989, #c9a466)",
+                color: "#1a1420",
+              }}
+            >
+              Iniciar Revancha
+            </button>
+          ) : (
+            <button
+              onClick={() => getSocket().emit("rematch", {})}
+              disabled={hasVoted}
+              className="inline-block px-10 py-3 rounded-sm font-bold text-[11px] uppercase tracking-widest transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: hasVoted ? "rgba(255,255,255,0.1)" : "linear-gradient(180deg, #e8c989, #c9a466)",
+                color: hasVoted ? "var(--gold)" : "#1a1420",
+                border: hasVoted ? "1px solid rgba(255,215,0,0.2)" : "none",
+              }}
+            >
+              {hasVoted ? "Esperando al creador..." : "Pedir Revancha"}
+            </button>
+          )}
+          <a
+            href="/"
+            className="inline-block px-10 py-3 rounded-sm font-bold text-[10px] uppercase tracking-widest transition-colors hover:bg-white/5"
+            style={{ color: "var(--ink-dim)" }}
+          >
+            Volver al menú principal
+          </a>
+        </div>
       </div>
     </div>
   );

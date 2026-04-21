@@ -15,6 +15,7 @@ export class GameRoom {
   private interval: NodeJS.Timeout | null = null;
   // sockets keyed by clientId (stable across reloads)
   private sockets = new Map<string, Socket>();
+  private rematchVotes = new Set<string>();
 
   constructor(id: string, private io: Server, config?: RoomConfig) {
     this.id = id;
@@ -68,7 +69,7 @@ export class GameRoom {
     this.engine.start();
     this.interval = setInterval(() => {
       this.engine.step();
-      this.io.to(this.id).emit("tick", this.engine.snapshot());
+      this.io.to(this.id).emit("tick", this.engine.snapshot(Array.from(this.rematchVotes)));
       if (this.engine.status === "finished") this.stop();
     }, TICK_MS);
   }
@@ -78,6 +79,39 @@ export class GameRoom {
       clearInterval(this.interval);
       this.interval = null;
     }
+  }
+
+  voteRematch(socket: Socket) {
+    const cid = socket.data.clientId ?? clientIdOf(socket);
+    this.rematchVotes.add(cid);
+    // Send immediate snapshot update so UI reacts
+    this.io.to(this.id).emit("tick", this.engine.snapshot(Array.from(this.rematchVotes)));
+  }
+
+  restartGame(socket: Socket) {
+    const cid = socket.data.clientId ?? clientIdOf(socket);
+    const players = Array.from(this.engine.players.values());
+    if (players.length > 0 && players[0].id !== cid) return false;
+
+    // Kick players who didn't vote
+    for (const p of players) {
+      // The creator is implicitly ready
+      if (!this.rematchVotes.has(p.id) && p.id !== cid) {
+        this.engine.removePlayer(p.id);
+        const s = this.sockets.get(p.id);
+        if (s) {
+          s.emit("kicked");
+          s.leave(this.id);
+          this.sockets.delete(p.id);
+        }
+      }
+    }
+    
+    this.engine.resetGame();
+    this.rematchVotes.clear();
+    this.broadcastLobby();
+    this.io.to(this.id).emit("tick", this.engine.snapshot(Array.from(this.rematchVotes)));
+    return true;
   }
 
   get size() {

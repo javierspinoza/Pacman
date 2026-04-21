@@ -573,7 +573,40 @@ export class GameEngine {
     this.countdown = 3 * 30; // 3 seconds pause
   }
 
-  snapshot(): GameSnapshot {
+  resetGame() {
+    this.status = "lobby";
+    this.tick = 0;
+    this.score = 0;
+    this.level = 1;
+    this.winnerId = null;
+    this.scheduleIdx = 0;
+    this.scheduleRemaining = MODE_SCHEDULE[0].ticks;
+    this.frightenedRemaining = 0;
+    this.countdown = 0;
+    
+    for (let i = 0; i < this.maze.tiles.length; i++) {
+      if (this.maze.tiles[i] === TILE_PELLET || this.maze.tiles[i] === TILE_POWER) {
+        this.pellets[i] = 1;
+      }
+    }
+    this.pelletsRemaining = this.maze.totalPellets;
+
+    for (const p of this.players.values()) {
+      p.alive = true;
+      p.score = 0;
+      p.lives = 2;
+      if (p.role === "pacman") {
+        p.pos = this.findPacmanSpawn();
+      } else {
+        p.pos = { ...this.maze.ghostStarts[p.role as GhostName] };
+      }
+      p.dir = "none";
+      p.wanted = "none";
+    }
+    this.resetGhosts();
+  }
+
+  snapshot(rematchVotes: string[] = []): GameSnapshot {
     return {
       tick: this.tick,
       status: this.status,
@@ -585,6 +618,7 @@ export class GameEngine {
       winnerId: this.winnerId,
       countdown: this.countdown,
       level: this.level,
+      rematchVotes,
     };
   }
 }

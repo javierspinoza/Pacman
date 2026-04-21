@@ -51,6 +51,7 @@ export interface GameSnapshot {
   winnerId: string | null;
   countdown: number;
   level: number;
+  rematchVotes: string[];
 }
 
 export interface MazeLayout {
