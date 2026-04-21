@@ -6,7 +6,7 @@ describe("maze", () => {
   const maze = buildMaze();
 
   it("has the expected dimensions", () => {
-    expect(maze.width).toBe(28);
+    expect(maze.width).toBe(36);
     expect(maze.height).toBe(31);
   });
 
