@@ -10,6 +10,9 @@ import {
   TILE_PELLET,
   TILE_POWER,
   Vec2,
+  FruitEntity,
+  LaserBeam,
+  FruitType,
 } from "./types";
 import { buildMaze, isBlocked, wrapX } from "./maze";
 
@@ -54,13 +57,34 @@ export class GameEngine {
   countdown = 0;
   winnerId: string | null = null;
   level = 1;
+  fruits: FruitEntity[] = [];
+  lasers: LaserBeam[] = [];
+  fruitSpawnTimer = 15 * 30;
 
-  private getPacmanSpeed(): number {
-    return Math.min(0.2, PACMAN_SPEED + (this.level - 1) * 0.005);
+  private isFrozen(role: PlayerRole): boolean {
+    const isPacman = role === "pacman";
+    if (isPacman) {
+      return this.ghosts.some(g => g.activePower?.type === "melon");
+    } else {
+      for (const p of this.players.values()) {
+        if (p.role === "pacman" && p.activePower?.type === "melon") return true;
+      }
+      return false;
+    }
   }
 
-  private getGhostSpeed(): number {
-    return Math.min(0.19, GHOST_SPEED + (this.level - 1) * 0.01);
+  private getPacmanSpeed(player: PlayerState): number {
+    if (this.isFrozen(player.role)) return 0;
+    let speed = Math.min(0.2, PACMAN_SPEED + (this.level - 1) * 0.005);
+    if (player.activePower?.type === "cherry") speed *= 1.5;
+    return speed;
+  }
+
+  private getGhostSpeed(ghost: GhostState): number {
+    if (this.isFrozen(ghost.name)) return 0;
+    let speed = Math.min(0.19, GHOST_SPEED + (this.level - 1) * 0.01);
+    if (ghost.activePower?.type === "cherry") speed *= 1.5;
+    return speed;
   }
 
   private getFrightenedDuration(): number {
