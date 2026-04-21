@@ -9,6 +9,8 @@ import {
   PlayerState,
   TILE_PELLET,
   TILE_POWER,
+  TILE_WALL,
+  TILE_GATE,
   Vec2,
   FruitEntity,
   LaserBeam,
