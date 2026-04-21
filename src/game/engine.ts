@@ -515,11 +515,9 @@ export class GameEngine {
             if (player.lives <= 0) {
               player.alive = false;
             } else {
-              player.pos = { ...this.maze.pacmanStart };
+              player.pos = this.findPacmanSpawn();
               player.dir = "none";
               player.wanted = "none";
-              this.resetGhosts();
-              this.countdown = 2 * 30;
             }
             return;
           }
