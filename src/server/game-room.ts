@@ -67,6 +67,14 @@ export class GameRoom {
   start() {
     if (this.interval) return;
     this.engine.start();
+    // Roles may have been shuffled in versus mode — notify each client of its new role.
+    for (const [cid, socket] of this.sockets) {
+      const player = this.engine.players.get(cid);
+      if (player) {
+        socket.emit("assigned", { playerId: cid, role: player.role, roomId: this.id });
+      }
+    }
+    this.broadcastLobby();
     this.interval = setInterval(() => {
       this.engine.step();
       this.io.to(this.id).emit("tick", this.engine.snapshot(Array.from(this.rematchVotes)));

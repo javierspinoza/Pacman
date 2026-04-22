@@ -231,8 +231,41 @@ export class GameEngine {
   }
 
   start() {
+    if (this.config.mode === "versus") this.shuffleRoles();
     this.status = "running";
     this.countdown = 3 * 30;
+  }
+
+  private shuffleRoles() {
+    const ids = Array.from(this.players.keys());
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    const total = ids.length;
+    const pacCount = Math.max(1, Math.min(Math.ceil(total / 2), total - 1));
+    const ghostPool: GhostName[] = [...GHOST_NAMES];
+    // Shuffle ghost assignments too so you don't always become blinky first.
+    for (let i = ghostPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ghostPool[i], ghostPool[j]] = [ghostPool[j], ghostPool[i]];
+    }
+    let ghostIdx = 0;
+    ids.forEach((id, idx) => {
+      const p = this.players.get(id);
+      if (!p) return;
+      if (idx < pacCount) {
+        p.role = "pacman";
+        p.pos = this.findPacmanSpawn();
+      } else {
+        const ghostName = ghostPool[ghostIdx++ % ghostPool.length];
+        p.role = ghostName;
+        p.pos = { ...this.maze.ghostStarts[ghostName] };
+      }
+      p.dir = "none";
+      p.wanted = "none";
+    });
+    this.resetGhosts();
   }
 
   step() {
