@@ -7,60 +7,12 @@ import {
   TILE_POWER,
   TILE_GATE,
 } from "./types";
+import { LAYOUTS } from "./layouts";
 
-// 36x31 maze. Wider Pac-Man-style layout with dual horizontal tunnels,
-// side chambers flanking the ghost house, and extra interior shortcuts
-// that give both Pac-Man and ghost players more flanking routes.
-// Legend:
-//  #  wall        .  pellet       o  power pellet
-//  -  ghost gate  P  pacman spawn (empty)
-//  B N I C = ghost spawn slots (empty tile)
-//  space   = empty corridor (no pellet)
-//
-// Every row is EXACTLY 36 characters. The layout is mirrored around the
-// vertical seam between columns 17 and 18.
-// Each row is written as two 18-char halves concatenated → exactly 36 chars.
-// The seam is between columns 17 and 18. Layout is horizontally symmetric
-// except for the ghost-spawn letters (B/N/I/C).
-const RAW: string[] = [
-  //0         1         2         3
-  //0123456789012345678901234567890123 45
-  "####################################", //  0  top wall
-  "#................##................#", //  1
-  "#.####.########.####.########.####.#", //  2
-  "#.####.########.####.########.####.#", //  3
-  "#.####.########.####.########.####.#", //  4
-  "#..................................#", //  5  perimeter corridor
-  "#.####.####.####.##.####.####.####.#", //  6
-  "#.####.####.####.##.####.####.####.#", //  7
-  "#......####.......##.......####....#", //  8
-  "######.####.##########.####.########", //  9  wall row w/ vertical lanes
-  "     #.####.##########.####.#       ", // 10
-  "     #......................#       ", // 11
-  "     #.####.###----###.####.#       ", // 12
-  "######.####.#        #.####.########", // 13
-  "      .     #   N  B #     .       #", // 14
-  "######.####.#        #.####.########", // 15
-  "      .     #   I  C #     .       #", // 16
-  "######.####.##########.####.########", // 17
-  "     #......................#       ", // 18
-  "     #.####.####.##.####.####.#     ", // 19
-  "######.####.####.##.####.####.######", // 20
-  "#................##................#", // 21
-  "#.####.########.####.########.####.#", // 22
-  "#.####.########.####.########.####.#", // 23
-  "#...##.........P..........##.......#", // 24  pacman spawn
-  "###.##.####.##.######.##.####.##.###", // 25
-  "###.##.####.##.######.##.####.##.###", // 26
-  "#......####......##......####......#", // 27
-  "#.##############.##.##############.#", // 28
-  "#.##############.##.##############.#", // 29
-  "####################################", // 30  bottom wall
-];
-
-export function buildMaze(): MazeLayout {
+export function buildMaze(layoutIndex: number = 0): MazeLayout {
+  const raw = LAYOUTS[((layoutIndex % LAYOUTS.length) + LAYOUTS.length) % LAYOUTS.length];
   const width = 36;
-  const height = RAW.length;
+  const height = raw.length;
   const tiles: TileType[] = new Array(width * height).fill(TILE_EMPTY);
   let pacmanStart = { x: 17, y: 24 };
   const ghostStarts = {
@@ -73,7 +25,7 @@ export function buildMaze(): MazeLayout {
   let totalPellets = 0;
 
   for (let y = 0; y < height; y++) {
-    const row = RAW[y].padEnd(width, " ").slice(0, width);
+    const row = raw[y].padEnd(width, " ").slice(0, width);
     for (let x = 0; x < width; x++) {
       const ch = row[x];
       const idx = y * width + x;

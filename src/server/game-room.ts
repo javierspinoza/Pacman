@@ -16,6 +16,7 @@ export class GameRoom {
   // sockets keyed by clientId (stable across reloads)
   private sockets = new Map<string, Socket>();
   private rematchVotes = new Set<string>();
+  private lastLayoutIndex = 0;
 
   constructor(id: string, private io: Server, config?: RoomConfig) {
     this.id = id;
@@ -75,8 +76,13 @@ export class GameRoom {
       }
     }
     this.broadcastLobby();
+    this.lastLayoutIndex = this.engine.currentLayoutIndex;
     this.interval = setInterval(() => {
       this.engine.step();
+      if (this.engine.currentLayoutIndex !== this.lastLayoutIndex) {
+        this.lastLayoutIndex = this.engine.currentLayoutIndex;
+        this.broadcastLobby();
+      }
       this.io.to(this.id).emit("tick", this.engine.snapshot(Array.from(this.rematchVotes)));
       if (this.engine.status === "finished") this.stop();
     }, TICK_MS);

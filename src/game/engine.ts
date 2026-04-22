@@ -17,6 +17,7 @@ import {
   FruitType,
 } from "./types";
 import { buildMaze, isBlocked, wrapX } from "./maze";
+import { LAYOUTS } from "./layouts";
 
 const GHOST_NAMES: GhostName[] = ["blinky", "pinky", "inky", "clyde"];
 
@@ -43,9 +44,14 @@ export interface RoomConfig {
   maxPlayers: number;
 }
 
+const SHUFFLE_DURATION = 15 * 30; // seconds the swapped layout stays active
+
 export class GameEngine {
-  readonly maze: MazeLayout;
+  maze: MazeLayout;
   readonly config: RoomConfig;
+  baseLayoutIndex = 0;
+  currentLayoutIndex = 0;
+  shuffleRemaining = 0;
   tick = 0;
   status: GameSnapshot["status"] = "lobby";
   players = new Map<string, PlayerState>();
@@ -278,6 +284,13 @@ export class GameEngine {
     }
 
     this.advanceSchedule();
+
+    if (this.shuffleRemaining > 0) {
+      this.shuffleRemaining--;
+      if (this.shuffleRemaining === 0 && this.currentLayoutIndex !== this.baseLayoutIndex) {
+        this.swapMaze(this.baseLayoutIndex);
+      }
+    }
 
     if (this.fruitSpawnTimer > 0) this.fruitSpawnTimer--;
     else this.spawnFruit();
@@ -694,8 +707,12 @@ export class GameEngine {
     this.scheduleRemaining = MODE_SCHEDULE[0].ticks;
     this.frightenedRemaining = 0;
     this.pacmenVulnerableRemaining = 0;
+    this.shuffleRemaining = 0;
     this.countdown = 0;
     this.fruits = [];
+    if (this.currentLayoutIndex !== this.baseLayoutIndex) {
+      this.swapMaze(this.baseLayoutIndex);
+    }
     this.lasers = [];
     this.fruitSpawnTimer = 15 * 30;
     
@@ -741,6 +758,80 @@ export class GameEngine {
     };
   }
 
+  private pickDifferentLayout(): number {
+    if (LAYOUTS.length <= 1) return this.currentLayoutIndex;
+    let next = this.currentLayoutIndex;
+    while (next === this.currentLayoutIndex) {
+      next = Math.floor(Math.random() * LAYOUTS.length);
+    }
+    return next;
+  }
+
+  private swapMaze(layoutIndex: number) {
+    const newMaze = buildMaze(layoutIndex);
+    this.maze = newMaze;
+    this.currentLayoutIndex = layoutIndex;
+
+    // Reset pellets from the new layout — any uneaten pellets from the
+    // previous layout are discarded, any new layout tiles marked pellet/power
+    // are fresh.
+    this.pellets = new Uint8Array(newMaze.width * newMaze.height);
+    for (let i = 0; i < newMaze.tiles.length; i++) {
+      if (newMaze.tiles[i] === TILE_PELLET || newMaze.tiles[i] === TILE_POWER) {
+        this.pellets[i] = 1;
+      }
+    }
+    this.pelletsRemaining = newMaze.totalPellets;
+
+    // Drop any fruits that now sit inside walls.
+    this.fruits = this.fruits.filter((f) => {
+      const t = newMaze.tiles[f.pos.y * newMaze.width + f.pos.x];
+      return t !== TILE_WALL;
+    });
+    this.lasers = [];
+
+    // Push entities out of walls to the nearest open tile.
+    for (const p of this.players.values()) this.unstickEntity(p);
+    for (const g of this.ghosts) this.unstickEntity(g);
+  }
+
+  private unstickEntity(entity: { pos: Vec2; dir: Direction; wanted: Direction }) {
+    const cx = Math.round(entity.pos.x);
+    const cy = Math.round(entity.pos.y);
+    if (cy >= 0 && cy < this.maze.height) {
+      const wx = ((cx % this.maze.width) + this.maze.width) % this.maze.width;
+      if (!isBlocked(this.maze, wx, cy, true)) return;
+    }
+    // BFS outward for nearest non-wall, non-gate tile.
+    const W = this.maze.width;
+    const H = this.maze.height;
+    const seen = new Uint8Array(W * H);
+    const queue: Array<{ x: number; y: number }> = [{ x: cx, y: cy }];
+    const key = (x: number, y: number) => y * W + x;
+    if (cy >= 0 && cy < H) seen[key(((cx % W) + W) % W, cy)] = 1;
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (cur.y >= 0 && cur.y < H) {
+        const wx = ((cur.x % W) + W) % W;
+        if (!isBlocked(this.maze, wx, cur.y)) {
+          entity.pos = { x: wx, y: cur.y };
+          entity.dir = "none";
+          entity.wanted = "none";
+          return;
+        }
+      }
+      for (const [dxo, dyo] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+        const nx = cur.x + dxo;
+        const ny = cur.y + dyo;
+        if (ny < 0 || ny >= H) continue;
+        const wnx = ((nx % W) + W) % W;
+        if (seen[key(wnx, ny)]) continue;
+        seen[key(wnx, ny)] = 1;
+        queue.push({ x: wnx, y: ny });
+      }
+    }
+  }
+
   private spawnFruit() {
     const validTiles: Vec2[] = [];
     for (let y = 0; y < this.maze.height; y++) {
@@ -754,7 +845,7 @@ export class GameEngine {
     }
     if (validTiles.length === 0) return;
     const pos = validTiles[Math.floor(Math.random() * validTiles.length)];
-    const types: FruitType[] = ["cherry", "strawberry", "apple", "melon", "powerpellet"];
+    const types: FruitType[] = ["cherry", "strawberry", "apple", "melon", "powerpellet", "shuffle"];
     const type = types[Math.floor(Math.random() * types.length)];
     this.fruits.push({
       id: Math.random().toString(36).slice(2),
@@ -777,6 +868,14 @@ export class GameEngine {
 
         if (fruitType === "apple") {
            this.fireLaser(entity);
+        } else if (fruitType === "shuffle") {
+           const next = this.pickDifferentLayout();
+           this.swapMaze(next);
+           this.shuffleRemaining = SHUFFLE_DURATION;
+           if ('role' in entity && entity.role === "pacman") {
+             (entity as PlayerState).score += 100;
+             this.score += 100;
+           }
         } else if (fruitType === "powerpellet") {
            const isPacman = 'role' in entity && entity.role === "pacman";
            if (isPacman) {

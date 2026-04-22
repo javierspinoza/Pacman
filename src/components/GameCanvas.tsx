@@ -705,6 +705,7 @@ function drawFruits(ctx: CanvasRenderingContext2D, fruits: any[]) {
     apple: "🍏",
     melon: "🍈",
     powerpellet: "🫐",
+    shuffle: "🌀",
   };
   const fruitColors: Record<string, string> = {
     cherry: "rgba(255, 0, 0, 0.8)",
@@ -712,6 +713,7 @@ function drawFruits(ctx: CanvasRenderingContext2D, fruits: any[]) {
     apple: "rgba(50, 205, 50, 0.8)",
     melon: "rgba(0, 255, 255, 0.8)",
     powerpellet: "rgba(0, 200, 255, 1)",
+    shuffle: "rgba(180, 0, 255, 0.9)",
   };
 
   for (const f of fruits) {

@@ -12,7 +12,7 @@ export interface Vec2 {
   y: number;
 }
 
-export type FruitType = "cherry" | "strawberry" | "apple" | "melon" | "powerpellet";
+export type FruitType = "cherry" | "strawberry" | "apple" | "melon" | "powerpellet" | "shuffle";
 
 export interface ActivePower {
   type: FruitType;
