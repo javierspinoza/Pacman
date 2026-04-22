@@ -56,6 +56,7 @@ export class GameEngine {
   scheduleIdx = 0;
   scheduleRemaining = MODE_SCHEDULE[0].ticks;
   frightenedRemaining = 0;
+  pacmenVulnerableRemaining = 0;
   countdown = 0;
   winnerId: string | null = null;
   level = 1;
@@ -79,6 +80,7 @@ export class GameEngine {
     if (this.isFrozen(player.role)) return 0;
     let speed = Math.min(0.2, PACMAN_SPEED + (this.level - 1) * 0.005);
     if (player.activePower?.type === "cherry") speed *= 1.5;
+    if (this.pacmenVulnerableRemaining > 0) speed *= 0.6;
     return speed;
   }
 
@@ -287,6 +289,7 @@ export class GameEngine {
   }
 
   private advanceSchedule() {
+    if (this.pacmenVulnerableRemaining > 0) this.pacmenVulnerableRemaining--;
     if (this.frightenedRemaining > 0) {
       this.frightenedRemaining--;
       if (this.frightenedRemaining === 0) {
@@ -347,6 +350,10 @@ export class GameEngine {
         g.dir = reverseDir(g.dir);
       }
     }
+  }
+
+  private enterPacmenVulnerable() {
+    this.pacmenVulnerableRemaining = this.getFrightenedDuration();
   }
 
   private moveGhost(ghost: GhostState) {
@@ -582,6 +589,13 @@ export class GameEngine {
               }
             }
           } else if (ghost.mode !== "eaten" && ghost.mode !== "leaving") {
+            if (this.pacmenVulnerableRemaining > 0 && ghost.controlledBy) {
+              const killer = this.players.get(ghost.controlledBy);
+              if (killer) {
+                killer.score += 200;
+                this.score += 200;
+              }
+            }
             this.killPacman(player, ghost.controlledBy);
             return;
           }
@@ -646,6 +660,7 @@ export class GameEngine {
     this.scheduleIdx = 0;
     this.scheduleRemaining = MODE_SCHEDULE[0].ticks;
     this.frightenedRemaining = 0;
+    this.pacmenVulnerableRemaining = 0;
     this.countdown = 0;
     this.fruits = [];
     this.lasers = [];
@@ -689,6 +704,7 @@ export class GameEngine {
       rematchVotes,
       fruits: this.fruits,
       lasers: this.lasers,
+      pacmenVulnerableRemaining: this.pacmenVulnerableRemaining,
     };
   }
 
@@ -705,7 +721,7 @@ export class GameEngine {
     }
     if (validTiles.length === 0) return;
     const pos = validTiles[Math.floor(Math.random() * validTiles.length)];
-    const types: FruitType[] = ["cherry", "strawberry", "apple", "melon"];
+    const types: FruitType[] = ["cherry", "strawberry", "apple", "melon", "powerpellet"];
     const type = types[Math.floor(Math.random() * types.length)];
     this.fruits.push({
       id: Math.random().toString(36).slice(2),
@@ -728,6 +744,15 @@ export class GameEngine {
 
         if (fruitType === "apple") {
            this.fireLaser(entity);
+        } else if (fruitType === "powerpellet") {
+           const isPacman = 'role' in entity && entity.role === "pacman";
+           if (isPacman) {
+             (entity as PlayerState).score += 50;
+             this.score += 50;
+             this.enterFrightened();
+           } else {
+             this.enterPacmenVulnerable();
+           }
         } else {
            entity.activePower = {
              type: fruitType,

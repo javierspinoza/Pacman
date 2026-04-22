@@ -342,7 +342,7 @@ function drawEntities(
       const prevP = prev?.players.find((p) => p.id === player.id);
       x = lerp(prevP?.pos.x ?? player.pos.x, player.pos.x, alpha);
       y = lerp(prevP?.pos.y ?? player.pos.y, player.pos.y, alpha);
-      drawPacman(ctx, x, y, player.dir, snap.tick, player.id === selfId, player.activePower);
+      drawPacman(ctx, x, y, player.dir, snap.tick, player.id === selfId, player.activePower, snap.pacmenVulnerableRemaining > 0);
     } else {
       const ghost = snap.ghosts.find(g => g.name === player.role);
       if (!ghost) continue;
@@ -403,7 +403,8 @@ function drawPacman(
   dir: PlayerState["dir"],
   tick: number,
   isSelf: boolean,
-  activePower: any
+  activePower: any,
+  vulnerable: boolean = false
 ) {
   const cx = tileX * CELL + CELL / 2;
   const cy = tileY * CELL + CELL / 2;
@@ -445,13 +446,25 @@ function drawPacman(
     ctx.stroke();
   }
 
-  // Neon yellow body
-  ctx.shadowColor = "rgba(255, 230, 0, 1)";
+  // Neon yellow body (or blue/white flash when vulnerable)
+  const flashBlue = vulnerable && Math.floor(tick / 6) % 2 === 0;
+  const flashWhite = vulnerable && Math.floor(tick / 6) % 2 === 1;
+  ctx.shadowColor = vulnerable ? "rgba(0, 100, 255, 1)" : "rgba(255, 230, 0, 1)";
   ctx.shadowBlur = 20;
   const grad = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
-  grad.addColorStop(0, "#FFFFFF");
-  grad.addColorStop(0.4, "#FFE600");
-  grad.addColorStop(1, "#CCB800");
+  if (flashBlue) {
+    grad.addColorStop(0, "#AACCFF");
+    grad.addColorStop(0.4, "#0040FF");
+    grad.addColorStop(1, "#001A80");
+  } else if (flashWhite) {
+    grad.addColorStop(0, "#FFFFFF");
+    grad.addColorStop(0.4, "#E0E0FF");
+    grad.addColorStop(1, "#8888BB");
+  } else {
+    grad.addColorStop(0, "#FFFFFF");
+    grad.addColorStop(0.4, "#FFE600");
+    grad.addColorStop(1, "#CCB800");
+  }
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.moveTo(0, 0);
@@ -691,12 +704,14 @@ function drawFruits(ctx: CanvasRenderingContext2D, fruits: any[]) {
     strawberry: "🍓",
     apple: "🍏",
     melon: "🍈",
+    powerpellet: "🫐",
   };
   const fruitColors: Record<string, string> = {
     cherry: "rgba(255, 0, 0, 0.8)",
     strawberry: "rgba(255, 105, 180, 0.8)",
     apple: "rgba(50, 205, 50, 0.8)",
     melon: "rgba(0, 255, 255, 0.8)",
+    powerpellet: "rgba(0, 200, 255, 1)",
   };
 
   for (const f of fruits) {

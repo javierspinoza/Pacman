@@ -12,7 +12,7 @@ export interface Vec2 {
   y: number;
 }
 
-export type FruitType = "cherry" | "strawberry" | "apple" | "melon";
+export type FruitType = "cherry" | "strawberry" | "apple" | "melon" | "powerpellet";
 
 export interface ActivePower {
   type: FruitType;
@@ -78,6 +78,7 @@ export interface GameSnapshot {
   rematchVotes: string[];
   fruits: FruitEntity[];
   lasers: LaserBeam[];
+  pacmenVulnerableRemaining: number;
 }
 
 export interface MazeLayout {
