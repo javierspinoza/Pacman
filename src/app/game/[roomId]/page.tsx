@@ -287,6 +287,10 @@ function GameOver() {
 
   const isCreator = lobby.players[0]?.id === playerId;
   const hasVoted = snapshot.rematchVotes?.includes(playerId ?? "") || false;
+  const votes = snapshot.rematchVotes ?? [];
+  const nonCreatorPlayers = lobby.players.filter((p) => p.id !== lobby.players[0]?.id);
+  const votedCount = votes.length;
+  const totalOthers = nonCreatorPlayers.length;
 
   return (
     <div
@@ -326,15 +330,18 @@ function GameOver() {
         <div className="text-left space-y-3">
           <h3 className="eyebrow flex justify-between items-center">
             <span>Puntuaciones finales</span>
-            {snapshot.rematchVotes && snapshot.rematchVotes.length > 0 && (
-              <span className="text-[9px] text-[var(--gold)]">Revancha: {snapshot.rematchVotes.length}</span>
+            {totalOthers > 0 && (
+              <span className="text-[9px] text-[var(--gold)]">
+                Revancha: {votedCount}/{totalOthers}
+              </span>
             )}
           </h3>
           <ul className="space-y-1">
             {[...snapshot.players]
               .sort((a, b) => b.score - a.score)
               .map((p, i) => {
-                const voted = snapshot.rematchVotes?.includes(p.id) || (isCreator && lobby.players[0]?.id === p.id);
+                const isAdmin = lobby.players[0]?.id === p.id;
+                const voted = snapshot.rematchVotes?.includes(p.id) ?? false;
                 return (
                   <li
                     key={p.id}
@@ -352,7 +359,14 @@ function GameOver() {
                       </span>
                       <span>
                         {p.name}
-                        {voted && <span className="ml-2 text-[var(--gold)] text-xs">✓</span>}
+                        {isAdmin && (
+                          <span className="ml-2 text-[9px] uppercase tracking-wider text-[var(--gold)]">
+                            admin
+                          </span>
+                        )}
+                        {!isAdmin && voted && (
+                          <span className="ml-2 text-[var(--gold)] text-xs">✓ revancha</span>
+                        )}
                       </span>
                     </span>
                     <span className="font-mono tabular-nums">
@@ -365,16 +379,68 @@ function GameOver() {
         </div>
         <div className="flex flex-col gap-3 mt-6">
           {isCreator ? (
-            <button
-              onClick={() => getSocket().emit("restart_game", {})}
-              className="inline-block px-10 py-3 rounded-sm font-bold text-[11px] uppercase tracking-widest transition-opacity hover:opacity-90"
-              style={{
-                background: "linear-gradient(180deg, #e8c989, #c9a466)",
-                color: "#1a1420",
-              }}
-            >
-              Iniciar Revancha
-            </button>
+            <>
+              {totalOthers > 0 && (
+                <div
+                  className="rounded-sm px-4 py-3 text-left space-y-2"
+                  style={{
+                    background: "rgba(212,175,106,0.06)",
+                    border: "1px solid rgba(212,175,106,0.18)",
+                  }}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="eyebrow">Solicitudes de revancha</span>
+                    <span
+                      className="font-mono text-[10px]"
+                      style={{
+                        color: votedCount === totalOthers ? "var(--gold)" : "var(--ink-dim)",
+                      }}
+                    >
+                      {votedCount}/{totalOthers}
+                    </span>
+                  </div>
+                  <div
+                    className="h-1 rounded-full overflow-hidden"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                  >
+                    <div
+                      className="h-full transition-all"
+                      style={{
+                        width: `${totalOthers ? (votedCount / totalOthers) * 100 : 0}%`,
+                        background: "linear-gradient(90deg, #e8c989, #c9a466)",
+                      }}
+                    />
+                  </div>
+                  <ul className="text-[10px] space-y-0.5 pt-1">
+                    {nonCreatorPlayers.map((p) => {
+                      const ok = votes.includes(p.id);
+                      return (
+                        <li
+                          key={p.id}
+                          className="flex justify-between font-mono"
+                          style={{ color: ok ? "var(--gold)" : "var(--ink-dim)" }}
+                        >
+                          <span>{p.name}</span>
+                          <span>{ok ? "✓ lista" : "· pendiente"}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              <button
+                onClick={() => getSocket().emit("restart_game", {})}
+                className="inline-block px-10 py-3 rounded-sm font-bold text-[11px] uppercase tracking-widest transition-opacity hover:opacity-90"
+                style={{
+                  background: "linear-gradient(180deg, #e8c989, #c9a466)",
+                  color: "#1a1420",
+                }}
+              >
+                {totalOthers > 0
+                  ? `Iniciar Revancha (${votedCount}/${totalOthers})`
+                  : "Iniciar Revancha"}
+              </button>
+            </>
           ) : (
             <button
               onClick={() => getSocket().emit("rematch", {})}
