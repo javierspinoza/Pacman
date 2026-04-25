@@ -342,6 +342,8 @@ function drawEntities(
       const prevP = prev?.players.find((p) => p.id === player.id);
       x = lerp(prevP?.pos.x ?? player.pos.x, player.pos.x, alpha);
       y = lerp(prevP?.pos.y ?? player.pos.y, player.pos.y, alpha);
+      const invuln = (player.respawnInvulnTicks ?? 0) > 0;
+      if (invuln && Math.floor(snap.tick / 4) % 2 === 0) continue;
       drawPacman(ctx, x, y, player.dir, snap.tick, player.id === selfId, player.activePower, snap.pacmenVulnerableRemaining > 0);
     } else {
       const ghost = snap.ghosts.find(g => g.name === player.role);

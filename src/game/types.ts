@@ -48,6 +48,7 @@ export interface PlayerState {
   alive: boolean;
   score: number;
   lives: number;
+  respawnInvulnTicks?: number;
   activePower?: ActivePower | null;
 }
 

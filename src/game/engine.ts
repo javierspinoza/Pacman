@@ -157,7 +157,7 @@ export class GameEngine {
       wanted: "none",
       alive: true,
       score: 0,
-      lives: 2,
+      lives: 3,
     };
     this.players.set(id, player);
     if (role !== "pacman") {
@@ -336,6 +336,9 @@ export class GameEngine {
 
   private advanceSchedule() {
     if (this.pacmenVulnerableRemaining > 0) this.pacmenVulnerableRemaining--;
+    for (const p of this.players.values()) {
+      if (p.respawnInvulnTicks && p.respawnInvulnTicks > 0) p.respawnInvulnTicks--;
+    }
     if (this.frightenedRemaining > 0) {
       this.frightenedRemaining--;
       if (this.frightenedRemaining === 0) {
@@ -604,12 +607,14 @@ export class GameEngine {
       player.pos = this.findPacmanSpawn();
       player.dir = "none";
       player.wanted = "none";
+      player.respawnInvulnTicks = 150;
     }
   }
 
   private handleCollisions() {
     for (const player of this.players.values()) {
       if (player.role !== "pacman" || !player.alive) continue;
+      if (player.respawnInvulnTicks && player.respawnInvulnTicks > 0) continue;
       for (const ghost of this.ghosts) {
         const isGhostInvisible = ghost.activePower?.type === "strawberry";
         const isPacmanInvisible = player.activePower?.type === "strawberry";
@@ -726,7 +731,8 @@ export class GameEngine {
     for (const p of this.players.values()) {
       p.alive = true;
       p.score = 0;
-      p.lives = 2;
+      p.lives = 3;
+      p.respawnInvulnTicks = 0;
       p.activePower = null;
       if (p.role === "pacman") {
         p.pos = this.findPacmanSpawn();
@@ -933,6 +939,7 @@ export class GameEngine {
       } else {
         for (const p of this.players.values()) {
            if (p.role === "pacman" && p.alive) {
+             if (p.respawnInvulnTicks && p.respawnInvulnTicks > 0) continue;
              if (Math.round(p.pos.x) === wx && Math.round(p.pos.y) === currY) {
                this.killPacman(p, 'controlledBy' in entity ? entity.controlledBy : null);
              }
