@@ -68,7 +68,7 @@ export class GameEngine {
   level = 1;
   fruits: FruitEntity[] = [];
   lasers: LaserBeam[] = [];
-  fruitSpawnTimer = 6 * 30;
+  fruitSpawnTimer = 4 * 30;
 
   private isFrozen(role: PlayerRole): boolean {
     const isPacman = role === "pacman";
@@ -733,7 +733,7 @@ export class GameEngine {
       this.swapMaze(this.baseLayoutIndex);
     }
     this.lasers = [];
-    this.fruitSpawnTimer = 6 * 30;
+    this.fruitSpawnTimer = 4 * 30;
 
     for (let i = 0; i < this.maze.tiles.length; i++) {
       if (this.maze.tiles[i] === TILE_PELLET || this.maze.tiles[i] === TILE_POWER) {
@@ -877,7 +877,7 @@ export class GameEngine {
       pos,
       expiresInTicks: 8 * 30
     });
-    this.fruitSpawnTimer = 6 * 30;
+    this.fruitSpawnTimer = 4 * 30;
   }
 
   private eatFruit(entity: PlayerState | GhostState) {
