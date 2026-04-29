@@ -61,6 +61,8 @@ export interface GhostState {
   mode: GhostMode;
   modeTimer: number;
   activePower?: ActivePower | null;
+  lives: number;
+  alive: boolean;
 }
 
 export type GameStatus = "lobby" | "running" | "paused" | "finished";

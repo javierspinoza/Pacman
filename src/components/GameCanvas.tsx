@@ -326,6 +326,7 @@ function drawEntities(
   selfId: string | null
 ) {
   for (const ghost of snap.ghosts) {
+    if (!ghost.alive) continue;
     const prevGhost = prev?.ghosts.find((g) => g.name === ghost.name);
     const x = lerp(prevGhost?.pos.x ?? ghost.pos.x, ghost.pos.x, alpha);
     const y = lerp(prevGhost?.pos.y ?? ghost.pos.y, ghost.pos.y, alpha);

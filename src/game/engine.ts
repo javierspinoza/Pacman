@@ -130,6 +130,7 @@ export class GameEngine {
           break;
         }
       }
+      const prev = this.ghosts.find((g) => g.name === name);
       return {
         name,
         controlledBy,
@@ -138,6 +139,8 @@ export class GameEngine {
         wanted: "up",
         mode: "leaving",
         modeTimer: exitDelay[name],
+        lives: prev?.lives ?? 3,
+        alive: prev?.alive ?? true,
       };
     });
   }
@@ -327,6 +330,7 @@ export class GameEngine {
     }
 
     for (const ghost of this.ghosts) {
+      if (!ghost.alive) continue;
       this.moveGhost(ghost);
     }
 
@@ -616,6 +620,7 @@ export class GameEngine {
       if (player.role !== "pacman" || !player.alive) continue;
       if (player.respawnInvulnTicks && player.respawnInvulnTicks > 0) continue;
       for (const ghost of this.ghosts) {
+        if (!ghost.alive) continue;
         const isGhostInvisible = ghost.activePower?.type === "strawberry";
         const isPacmanInvisible = player.activePower?.type === "strawberry";
         if (isGhostInvisible || isPacmanInvisible) continue;
@@ -629,14 +634,15 @@ export class GameEngine {
             ghost.mode = "eaten";
             player.score += 200;
             this.score += 200;
-            // Ghost loses a life if human
+            ghost.lives--;
+            if (ghost.lives <= 0) {
+              ghost.alive = false;
+            }
             if (ghost.controlledBy) {
               const ghostPlayer = this.players.get(ghost.controlledBy);
               if (ghostPlayer) {
-                ghostPlayer.lives--;
-                if (ghostPlayer.lives <= 0) {
-                  ghostPlayer.alive = false;
-                }
+                ghostPlayer.lives = ghost.lives;
+                if (ghost.lives <= 0) ghostPlayer.alive = false;
               }
             }
           } else if (ghost.mode !== "eaten" && ghost.mode !== "leaving") {
@@ -671,6 +677,14 @@ export class GameEngine {
         for (const p of this.players.values()) {
           if (p.role !== "pacman") p.score += 500;
         }
+      }
+      this.status = "finished";
+      this.winnerId = null;
+      return;
+    }
+    if (this.ghosts.length > 0 && this.ghosts.every((g) => !g.alive)) {
+      for (const p of this.players.values()) {
+        if (p.role === "pacman" && p.alive) p.score += 500;
       }
       this.status = "finished";
       this.winnerId = null;
@@ -743,6 +757,10 @@ export class GameEngine {
       p.wanted = "none";
     }
     this.resetGhosts();
+    for (const g of this.ghosts) {
+      g.lives = 3;
+      g.alive = true;
+    }
   }
 
   snapshot(rematchVotes: string[] = []): GameSnapshot {
@@ -921,13 +939,16 @@ export class GameEngine {
       
       if (isPacman) {
         for (const g of this.ghosts) {
+           if (!g.alive) continue;
            if (Math.round(g.pos.x) === wx && Math.round(g.pos.y) === currY) {
              if (g.mode !== "eaten" && g.mode !== "leaving") {
                g.mode = "eaten";
+               g.lives--;
+               if (g.lives <= 0) g.alive = false;
                const ghostPlayer = g.controlledBy ? this.players.get(g.controlledBy) : null;
-               if (ghostPlayer && ghostPlayer.alive) {
-                 ghostPlayer.lives--;
-                 if (ghostPlayer.lives <= 0) ghostPlayer.alive = false;
+               if (ghostPlayer) {
+                 ghostPlayer.lives = g.lives;
+                 if (g.lives <= 0) ghostPlayer.alive = false;
                }
                if ('score' in entity) {
                   entity.score += 200;
